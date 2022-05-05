@@ -1,0 +1,42 @@
+version: 2
+jobs:
+  node:
+    working_directory: ~/ts-node-example
+    docker:
+      - image: circleci/node:lts
+    steps:
+      - checkout
+
+      - restore_cache:
+          key: yarn-v1-{{ checksum "yarn.lock" }}-{{ arch }}
+
+      - restore_cache:
+          key: node-v1-{{ checksum "package.json" }}-{{ arch }}
+
+      - run: yarn install
+
+      - save_cache:
+          key: yarn-v1-{{ checksum "yarn.lock" }}-{{ arch }}
+          paths:
+            - ~/.cache/yarn
+
+      - save_cache:
+          key: node-v1-{{ checksum "package.json" }}-{{ arch }}
+          paths:
+            - node_modules
+
+      - run:
+          name: jest tests
+          command: |
+            yarn run test:coverage
+
+      - run:
+          name: coverage
+          command: |
+            yarn run codecov -- -t cc807b99-5d4f-49b6-9a28-8357f399cdec
+
+workflows:
+  version: 2
+  node:
+    jobs:
+      - node
