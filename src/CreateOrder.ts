@@ -1,14 +1,52 @@
-import {BigNumber, hexUtils} from '@0x/utils';
-import {LimitOrder, Signature} from '@0x/protocol-utils';
-import {zeroExABI} from "./zeroExABI";
-import { providers, Contract, Wallet } from 'ethers'
+import { BigNumber, hexUtils } from '@0x/utils';
+import { LimitOrder, Signature } from '@0x/protocol-utils';
+import { zeroExABI } from './zeroExABI';
+import { providers, Contract, Wallet } from 'ethers';
 const axios = require('axios').default;
 
-const buildBscOrder = (
-): LimitOrder => {
+enum OrderSide {
+  Buy = 1,
+  Sell = 2,
+}
+enum OrderMethod {
+  BSC = 2,
+}
+enum OrderType {
+  LimitOrder = 1,
+  MarketOrder = 2,
+}
+enum OrderNameOfPairId {
+  EURV_USDV = 1,
+  GBPV_USDV = 2,
+  AUDV_USDV = 3,
+  USDV_JPYV = 4,
+  USDV_HKDV = 5,
+  USDV_SGDV = 6,
+  USDV_USDT = 7,
+}
+enum TokenAddress {
+  USDV = '0x6a422957767e65144Fe05941A984cF6b736e7C8B',
+  EURV = '0x07f936b6Ee10843de79C57184aE0D5cc4B3a3F8C',
+  GBPV = '0x51Ae6c6AED073f0d46DeFc8cFEE3F5E4cd8367F3',
+  AUDV = '0xEef409D4d7bC6cD8E4f791c5384ad569e30E623D',
+  JPYV = '0xc7dfeCBD076D70173D7615Bae0033068Bc790a3A',
+  HKDV = '0xAf2107081791e745Ddd494a7447De8A29a0F6309',
+  SGDV = '0xB79543490dE41F0DCb87C06ab1deb15FCb55b0e8',
+  USDT = ' 0xB02512a394a8D915551C4dbC4dd89Da6930596AC',
+}
+
+const ENV = {
+  PrivateKey:
+    '0x605219f36b986e2a270ef0f779beeedf4a2055b95d3df9044998c829b978c213',
+  ExchangeFcxProxy: '0x671bA355d51a1B58c0634F949ff512baAD994965',
+  FcxCreateOrderApi: 'https://api.fcx-staging.velo.org/api/v1/order',
+  JsonRpcProvider: 'https://data-seed-prebsc-1-s1.binance.org:8545',
+};
+
+const buildBscOrder = (): LimitOrder => {
   return new LimitOrder({
-    makerToken: '0x6a422957767e65144Fe05941A984cF6b736e7C8B',
-    takerToken: '0x07f936b6Ee10843de79C57184aE0D5cc4B3a3F8C',
+    makerToken: TokenAddress.USDV,
+    takerToken: TokenAddress.EURV,
     makerAmount: new BigNumber('999500000000000000'),
     takerAmount: new BigNumber('999500000000000000'),
     maker: '0x3f4bBdece2854C034255854Faa3A3Fb632cB309D',
@@ -22,16 +60,16 @@ const buildBscOrder = (
     expiry: getExpiry(),
     salt: new BigNumber(hexUtils.random()),
     chainId: 97,
-    verifyingContract: '0x671bA355d51a1B58c0634F949ff512baAD994965',
+    verifyingContract: ENV.ExchangeFcxProxy,
   });
 };
 
 const getExpiry = (): BigNumber => {
-    return new BigNumber(Math.floor(new Date(2100, 1, 1).getTime() / 1000));
+  return new BigNumber(Math.floor(new Date(2100, 1, 1).getTime() / 1000));
 };
 
 const signOrder = async (order: LimitOrder): Promise<Signature> => {
-  const signer = await order.getSignatureWithKey('0x605219f36b986e2a270ef0f779beeedf4a2055b95d3df9044998c829b978c213', 2);
+  const signer = await order.getSignatureWithKey(ENV.PrivateKey, 2);
   return signer;
 };
 
@@ -61,15 +99,15 @@ interface BscOrderType2 {
 
 export const createBscOrderType2 = (
   limitOrder: LimitOrder,
-  signature: Signature,
+  signature: Signature
 ): BscOrderType2 => {
   return {
     maker_token: limitOrder.makerToken,
     taker_token: limitOrder.takerToken,
     maker_amounts: limitOrder.makerAmount.toString(),
     taker_amounts: limitOrder.takerAmount.toString(),
-    price: "1",
-    amount: "1",
+    price: '1',
+    amount: '1',
     sender: limitOrder.sender,
     maker: limitOrder.maker,
     // fake
@@ -81,59 +119,51 @@ export const createBscOrderType2 = (
     pool: limitOrder.pool,
     expiry: limitOrder.expiry.toString(),
     salt: limitOrder.salt.toString(),
-    type: 1, // Limit order
+    type: OrderType.LimitOrder, // Limit order: ;
     signature: JSON.stringify(signature),
-    pair_id: 1,
-    side: 1, // buy order
+    pair_id: OrderNameOfPairId.EURV_USDV,
+    side: OrderSide.Buy, // buy order: ;
     order_hash: limitOrder.getHash(),
-    method: 2,
+    method: OrderMethod.BSC,
   };
 };
 
 let authHeaders = {
   headers: {
-    Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjkwLCJpYXQiOjE2NTE3NjQyOTcsImV4cCI6MTY1MTc2NDg5N30.TAPqQSbJAVX2dQvYPbh7SD1cO4VGxrGop8frw_TV_VY`,
+    'fcx-api-key': '90_7ammo9stktatqyvbov99m',
   },
 };
-
 
 const createOrder = async (): Promise<void> => {
   const bscOrder = buildBscOrder();
   const signature: Signature = await signOrder(bscOrder);
-  const provider = new providers.JsonRpcProvider('https://data-seed-prebsc-1-s1.binance.org:8545');
+  const provider = new providers.JsonRpcProvider(ENV.JsonRpcProvider);
 
-  const zeroEx = new Contract(
-    '0x671bA355d51a1B58c0634F949ff512baAD994965',
-    zeroExABI,
-    provider
-  );
+  const zeroEx = new Contract(ENV.ExchangeFcxProxy, zeroExABI, provider);
 
-  const maker = new Wallet('0x605219f36b986e2a270ef0f779beeedf4a2055b95d3df9044998c829b978c213', provider);
+  const maker = new Wallet(ENV.PrivateKey, provider);
 
   const txHashTestOwner = await zeroEx
     .connect(maker)
-    .createLimitOrder
-    (
-      JSON.parse(JSON.stringify(bscOrder)),
-      signature,
-      { gasLimit: 400000}
-    );
+    .createLimitOrder(JSON.parse(JSON.stringify(bscOrder)), signature, {
+      gasLimit: 400000,
+    });
   await txHashTestOwner.wait();
   const order = await createBscOrderType2(bscOrder, signature);
-  axios.post('https://api.fcx-staging.velo.org/api/v1/order', order, authHeaders)
+  axios
+    .post(ENV.FcxCreateOrderApi, order, authHeaders)
     .then((res: any) => {
       if (res.data.data) {
-        console.log('Create Order Success To Backend')
+        console.log('Create Order Success To Backend');
       }
     })
     .catch((error: any) => {
       console.log(error, 'Error');
     });
-}
+};
 
 function start(): void {
   createOrder();
 }
 
 start();
-
