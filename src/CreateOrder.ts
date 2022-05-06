@@ -1,3 +1,5 @@
+/* eslint-disable prefer-const */
+/* eslint-disable camelcase */
 import { BigNumber, hexUtils } from '@0x/utils';
 import { LimitOrder, Signature } from '@0x/protocol-utils';
 import { zeroExABI } from './zeroExABI';
@@ -41,12 +43,13 @@ const ENV = {
   ExchangeFcxProxy: '0x671bA355d51a1B58c0634F949ff512baAD994965',
   FcxCreateOrderApi: 'https://api.fcx-staging.velo.org/api/v1/order',
   JsonRpcProvider: 'https://data-seed-prebsc-1-s1.binance.org:8545',
+  ChainId: 97,
 };
 
 const buildBscOrder = (): LimitOrder => {
   return new LimitOrder({
     makerToken: TokenAddress.USDV,
-    takerToken: TokenAddress.EURV,
+    takerToken: TokenAddress.USDT,
     makerAmount: new BigNumber('999500000000000000'),
     takerAmount: new BigNumber('999500000000000000'),
     maker: '0x3f4bBdece2854C034255854Faa3A3Fb632cB309D',
@@ -59,7 +62,7 @@ const buildBscOrder = (): LimitOrder => {
     pool: '0x0000000000000000000000000000000000000000000000000000000000000000',
     expiry: getExpiry(),
     salt: new BigNumber(hexUtils.random()),
-    chainId: 97,
+    chainId: ENV.ChainId,
     verifyingContract: ENV.ExchangeFcxProxy,
   });
 };
@@ -92,7 +95,7 @@ interface BscOrderType2 {
   type: number;
   signature: string;
   pair_id: number;
-  side: 1 | 2;
+  side: OrderSide;
   order_hash: string;
   method: number;
 }
@@ -121,8 +124,8 @@ export const createBscOrderType2 = (
     salt: limitOrder.salt.toString(),
     type: OrderType.LimitOrder, // Limit order: ;
     signature: JSON.stringify(signature),
-    pair_id: OrderNameOfPairId.EURV_USDV,
-    side: OrderSide.Buy, // buy order: ;
+    pair_id: OrderNameOfPairId.USDV_USDT,
+    side: OrderSide.Sell, // buy order: ;
     order_hash: limitOrder.getHash(),
     method: OrderMethod.BSC,
   };

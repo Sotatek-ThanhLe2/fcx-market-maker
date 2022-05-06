@@ -1,23 +1,21 @@
-module.exports =  {
-  extends:  [
-    'standard',
-  ],
-  parser:  '@typescript-eslint/parser',
+module.exports = {
+  extends: ['standard'],
+  parser: '@typescript-eslint/parser',
   env: {
-    "browser": true,
-    "jest": true
+    browser: true,
+    jest: true,
   },
-  parserOptions:  {
+  parserOptions: {
     ecmaVersion: 2017,
     sourceType: 'module',
   },
-  rules:  {
-    "no-unused-vars": 0,
-    "comma-dangle": ["error", "always-multiline"],
-    "semi": [2, "always"],
-    "arrow-parens": ["error", "always"],
-    "space-before-function-paren": ["error", "never"],
-    "no-new-object": "error",
-    "no-array-constructor": "error"
+  rules: {
+    'no-unused-vars': 'off',
+    'comma-dangle': ['off'],
+    semi: [1, 'always'],
+    'arrow-parens': ['off', 'always'],
+    'space-before-function-paren': ['off', 'never'],
+    'no-new-object': 'off',
+    'no-array-constructor': 'off',
   },
 };
