@@ -17,6 +17,16 @@ enum OrderType {
   LimitOrder = 1,
   MarketOrder = 2,
 }
+
+// config for each enviroment
+
+let authHeaders = {
+  headers: {
+    'fcx-api-key': '90_7ammo9stktatqyvbov99m', // insert api key of user
+  },
+};
+
+// staging
 enum OrderNameOfPairId {
   EURV_USDV = 1,
   GBPV_USDV = 2,
@@ -46,18 +56,56 @@ const ENV = {
   ChainId: 97,
 };
 
+// get fee in database
+const fees = {
+  limitOrderBsc: '0.0005',
+  marketOrderBsc: '0.0035',
+};
+
+const amountOrder = '1';
+const priceOrder = '1';
+const walletOfMarketMaker = '0x3f4bBdece2854C034255854Faa3A3Fb632cB309D';
+const matcherAddress = '0x3b5FE29c29F50e6ca1086b163039935d712344E6';
+const feeRecipientAddress = '0x3b5FE29c29F50e6ca1086b163039935d712344E6';
+const orderSideCreated = OrderSide.Sell;
+
+const getAmountByOrderSide = (side: OrderSide) => {
+  const ratio = new BigNumber(1).minus(fees.limitOrderBsc);
+  if (side === OrderSide.Sell) {
+    return {
+      makerAmount: new BigNumber(amountOrder)
+        .times(ratio)
+        .times(new BigNumber(10).pow(18)),
+      takerAmount: new BigNumber(amountOrder)
+        .times(ratio)
+        .times(priceOrder)
+        .times(new BigNumber(10).pow(18)),
+    };
+  }
+  return {
+    makerAmount: new BigNumber(amountOrder)
+      .times(ratio)
+      .times(new BigNumber(10).pow(18)),
+    takerAmount: new BigNumber(amountOrder)
+      .times(ratio)
+      .times(priceOrder)
+      .times(new BigNumber(10).pow(18)),
+  };
+};
+
 const buildBscOrder = (): LimitOrder => {
   return new LimitOrder({
     makerToken: TokenAddress.USDV,
-    takerToken: TokenAddress.USDT,
-    makerAmount: new BigNumber('999500000000000000'),
-    takerAmount: new BigNumber('999500000000000000'),
-    maker: '0x3f4bBdece2854C034255854Faa3A3Fb632cB309D',
+    takerToken: TokenAddress.JPYV,
+    ...getAmountByOrderSide(orderSideCreated),
+    maker: walletOfMarketMaker,
     // fake
     taker: '0x0000000000000000000000000000000000000000',
-    sender: '0x3b5FE29c29F50e6ca1086b163039935d712344E6',
-    takerTokenFeeAmount: new BigNumber('500000000000000'),
-    feeRecipient: '0x3b5FE29c29F50e6ca1086b163039935d712344E6',
+    sender: matcherAddress,
+    takerTokenFeeAmount: new BigNumber(fees.limitOrderBsc).times(
+      new BigNumber(10).pow(18)
+    ),
+    feeRecipient: feeRecipientAddress,
     // fake
     pool: '0x0000000000000000000000000000000000000000000000000000000000000000',
     expiry: getExpiry(),
@@ -109,8 +157,8 @@ export const createBscOrderType2 = (
     taker_token: limitOrder.takerToken,
     maker_amounts: limitOrder.makerAmount.toString(),
     taker_amounts: limitOrder.takerAmount.toString(),
-    price: '1',
-    amount: '1',
+    price: priceOrder,
+    amount: amountOrder,
     sender: limitOrder.sender,
     maker: limitOrder.maker,
     // fake
@@ -124,17 +172,11 @@ export const createBscOrderType2 = (
     salt: limitOrder.salt.toString(),
     type: OrderType.LimitOrder, // Limit order: ;
     signature: JSON.stringify(signature),
-    pair_id: OrderNameOfPairId.USDV_USDT,
-    side: OrderSide.Sell, // buy order: ;
+    pair_id: OrderNameOfPairId.USDV_JPYV,
+    side: orderSideCreated, // buy order: ;
     order_hash: limitOrder.getHash(),
     method: OrderMethod.BSC,
   };
-};
-
-let authHeaders = {
-  headers: {
-    'fcx-api-key': '90_7ammo9stktatqyvbov99m',
-  },
 };
 
 const createOrder = async (): Promise<void> => {
@@ -157,16 +199,23 @@ const createOrder = async (): Promise<void> => {
     .post(ENV.FcxCreateOrderApi, order, authHeaders)
     .then((res: any) => {
       if (res.data.data) {
-        console.log('Create Order Success To Backend');
+        console.log(`Create Order Id: ${res.data.data.id} Success To Backend`);
       }
     })
     .catch((error: any) => {
-      console.log(error, 'Error');
+      console.log(error.response.data, 'Error');
     });
 };
 
 function start(): void {
   createOrder();
+  console.log(getAmountByOrderSide(OrderSide.Sell), 'Buy');
+  console.log(getAmountByOrderSide(OrderSide.Buy), 'Sell');
 }
 
 start();
+
+// taker: 2298850000000000000;
+// maker: 7816090000000000000;
+
+// { makerAmount: 2298850000000000000, takerAmount: 7816090000000000000 }
