@@ -1,18 +1,21 @@
 /* eslint-disable prefer-const */
 /* eslint-disable camelcase */
-import { BigNumber, hexUtils } from '@0x/utils';
-import { LimitOrder, Signature } from '@0x/protocol-utils';
-import { zeroExABI } from './zeroExABI';
-import { providers, Contract, Wallet } from 'ethers';
+import {BigNumber, hexUtils} from '@0x/utils';
+import {LimitOrder, Signature} from '@0x/protocol-utils';
+import {zeroExABI} from './zeroExABI';
+import {Contract, providers, Wallet} from 'ethers';
+
 const axios = require('axios').default;
 
 enum OrderSide {
   Buy = 1,
   Sell = 2,
 }
+
 enum OrderMethod {
   BSC = 2,
 }
+
 enum OrderType {
   LimitOrder = 1,
   MarketOrder = 2,
@@ -36,6 +39,7 @@ enum OrderNameOfPairId {
   USDV_SGDV = 6,
   USDV_USDT = 7,
 }
+
 enum TokenAddress {
   USDV = '0x6a422957767e65144Fe05941A984cF6b736e7C8B',
   EURV = '0x07f936b6Ee10843de79C57184aE0D5cc4B3a3F8C',
@@ -62,12 +66,12 @@ const fees = {
   marketOrderBsc: '0.0035',
 };
 
-const amountOrder = '1';
 const priceOrder = '1';
+const amountOrder = '0.5';
 const walletOfMarketMaker = '0x3f4bBdece2854C034255854Faa3A3Fb632cB309D';
 const matcherAddress = '0x3b5FE29c29F50e6ca1086b163039935d712344E6';
 const feeRecipientAddress = '0x3b5FE29c29F50e6ca1086b163039935d712344E6';
-const orderSideCreated = OrderSide.Sell;
+const orderSideCreated: OrderSide = OrderSide.Buy;
 
 const getAmountByOrderSide = (side: OrderSide) => {
   const ratio = new BigNumber(1).minus(fees.limitOrderBsc);
@@ -75,21 +79,21 @@ const getAmountByOrderSide = (side: OrderSide) => {
     return {
       makerAmount: new BigNumber(amountOrder)
         .times(ratio)
-        .times(new BigNumber(10).pow(18)),
+        .times(new BigNumber(10).pow(18)).dp(0, BigNumber.ROUND_FLOOR),
       takerAmount: new BigNumber(amountOrder)
         .times(ratio)
         .times(priceOrder)
-        .times(new BigNumber(10).pow(18)),
+        .times(new BigNumber(10).pow(18)).dp(0, BigNumber.ROUND_FLOOR),
     };
   }
   return {
     makerAmount: new BigNumber(amountOrder)
       .times(ratio)
-      .times(new BigNumber(10).pow(18)),
+      .times(priceOrder)
+      .times(new BigNumber(10).pow(18)).dp(0, BigNumber.ROUND_FLOOR),
     takerAmount: new BigNumber(amountOrder)
       .times(ratio)
-      .times(priceOrder)
-      .times(new BigNumber(10).pow(18)),
+      .times(new BigNumber(10).pow(18)).dp(0, BigNumber.ROUND_FLOOR),
   };
 };
 
@@ -98,13 +102,16 @@ const buildBscOrder = (): LimitOrder => {
     makerToken: TokenAddress.USDV,
     takerToken: TokenAddress.JPYV,
     ...getAmountByOrderSide(orderSideCreated),
-    maker: walletOfMarketMaker,
+    maker: walletOfMarketMaker.toLowerCase(),
     // fake
     taker: '0x0000000000000000000000000000000000000000',
     sender: matcherAddress,
-    takerTokenFeeAmount: new BigNumber(fees.limitOrderBsc).times(
-      new BigNumber(10).pow(18)
-    ),
+    // @ts-ignore
+    takerTokenFeeAmount: new BigNumber(orderSideCreated === OrderSide.Sell ? amountOrder : new BigNumber(amountOrder).times(priceOrder))
+      .times(fees.limitOrderBsc)
+      .times(
+        new BigNumber(10).pow(18).dp(0, BigNumber.ROUND_FLOOR)
+      ),
     feeRecipient: feeRecipientAddress,
     // fake
     pool: '0x0000000000000000000000000000000000000000000000000000000000000000',
@@ -181,6 +188,7 @@ export const createBscOrderType2 = (
 
 const createOrder = async (): Promise<void> => {
   const bscOrder = buildBscOrder();
+  console.log(bscOrder)
   const signature: Signature = await signOrder(bscOrder);
   const provider = new providers.JsonRpcProvider(ENV.JsonRpcProvider);
 
@@ -195,6 +203,7 @@ const createOrder = async (): Promise<void> => {
     });
   await txHashTestOwner.wait();
   const order = await createBscOrderType2(bscOrder, signature);
+  console.log(order);
   axios
     .post(ENV.FcxCreateOrderApi, order, authHeaders)
     .then((res: any) => {
