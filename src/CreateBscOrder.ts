@@ -186,7 +186,7 @@ export const createBscOrderType2 = (
   };
 };
 
-const createOrder = async (): Promise<void> => {
+const createBscOrder = async (): Promise<void> => {
   const bscOrder = buildBscOrder();
   console.log(bscOrder)
   const signature: Signature = await signOrder(bscOrder);
@@ -217,7 +217,7 @@ const createOrder = async (): Promise<void> => {
 };
 
 function start(): void {
-  createOrder();
+  createBscOrder();
   console.log(getAmountByOrderSide(OrderSide.Sell), 'Buy');
   console.log(getAmountByOrderSide(OrderSide.Buy), 'Sell');
 }
