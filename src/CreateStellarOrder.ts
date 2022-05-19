@@ -1,3 +1,6 @@
+/* eslint-disable camelcase */
+/* eslint-disable prefer-const */
+/* eslint-disable import/first */
 const axios = require('axios').default;
 import {
   Account,
@@ -57,12 +60,12 @@ enum TokenAddress {
 }
 
 const ENV = {
-  PrivateKey:
-    'SBAZF22EEHZTMO5GETMRX6WWQ7JG6HM6KDU2DLRRVT72CN5ZXMSYNW22',
+  PrivateKey: 'SBAZF22EEHZTMO5GETMRX6WWQ7JG6HM6KDU2DLRRVT72CN5ZXMSYNW22',
   FcxCreateOrderApi: 'https://api.fcx-staging.velo.org/api/v1/order',
   JsonRpcProvider: 'https://data-seed-prebsc-1-s1.binance.org:8545',
   ChainId: 97,
-  STELLAR_EXCHANGE_ACCOUNT:'GCXUFEUJDNR7NULOCUX4WAOYN4SQNPULDROMMKKQVHBUF5HLFCXKNGPL'
+  STELLAR_EXCHANGE_ACCOUNT:
+    'GCXUFEUJDNR7NULOCUX4WAOYN4SQNPULDROMMKKQVHBUF5HLFCXKNGPL',
 };
 
 // get fee in database
@@ -73,11 +76,14 @@ const fees = {
   marketOrderStellar: '0.03',
 };
 
-const getStellarOfferId = async (responseData: any): Promise<string | undefined> => {
+const getStellarOfferId = async (
+  responseData: any
+): Promise<string | undefined> => {
   if (responseData.offerResults[0]?.currentOffer) {
     return responseData.offerResults[0].currentOffer.offerId;
   } else if (responseData.offerResults[0].offersClaimed.length) {
-    const offerClaimedId = responseData.offerResults[0].offersClaimed[0].offerId;
+    const offerClaimedId =
+      responseData.offerResults[0].offersClaimed[0].offerId;
     return await axios
       // TODO: get next data if not found trade
       .get(`${STELLAR_HORIZON}trades?offer_id=${offerClaimedId}&limit=200`)
@@ -85,7 +91,8 @@ const getStellarOfferId = async (responseData: any): Promise<string | undefined>
         const record = res.data._embedded.records.find((d: any) => {
           return (
             d.ledger_close_time === responseData.created_at &&
-            (d.counter_offer_id === offerClaimedId || d.base_offer_id === offerClaimedId)
+            (d.counter_offer_id === offerClaimedId ||
+              d.base_offer_id === offerClaimedId)
           );
         });
         // if (record.offer_id === record.base_offer_id) {
@@ -104,7 +111,7 @@ const getStellarOfferId = async (responseData: any): Promise<string | undefined>
 };
 
 const stellarTxTimeout = 60;
-const STELLAR_DECIMAL = 7
+const STELLAR_DECIMAL = 7;
 
 enum STELLAR_ASSET_TYPE {
   NATIVE = 1,
@@ -117,8 +124,14 @@ const server = new Server(`${STELLAR_HORIZON}`);
 const networkPassphrase = 'Test SDF Network ; September 2015';
 const offerIdForNewOffer = '0';
 
-export const getAsset = (symbol: string, issuer: string, type: number): Asset => {
-  return type === STELLAR_ASSET_TYPE.NATIVE ? Asset.native() : new Asset(symbol, issuer);
+export const getAsset = (
+  symbol: string,
+  issuer: string,
+  type: number
+): Asset => {
+  return type === STELLAR_ASSET_TYPE.NATIVE
+    ? Asset.native()
+    : new Asset(symbol, issuer);
 };
 
 export const buildTxCreateBuyOffer = async (
@@ -128,7 +141,7 @@ export const buildTxCreateBuyOffer = async (
   targetAsset: Asset,
   sourceAccount: Account,
   offerId = '0',
-  exchangeFeeRate = '0',
+  exchangeFeeRate = '0'
 ): Promise<Transaction> => {
   const fee = (await server.fetchBaseFee()).toString();
 
@@ -148,7 +161,7 @@ export const buildTxCreateBuyOffer = async (
             .toString(),
           price: new BigNumber(price).dp(STELLAR_DECIMAL, BigNumber.ROUND_UP),
           offerId,
-        }),
+        })
       )
       .addOperation(
         Operation.payment({
@@ -159,7 +172,7 @@ export const buildTxCreateBuyOffer = async (
             .times(exchangeFeeRate)
             .dp(STELLAR_DECIMAL, BigNumber.ROUND_DOWN)
             .toString(),
-        }),
+        })
       )
       .setTimeout(stellarTxTimeout)
       .build();
@@ -174,10 +187,12 @@ export const buildTxCreateBuyOffer = async (
       Operation.manageBuyOffer({
         buying: baseAsset,
         selling: targetAsset,
-        buyAmount: new BigNumber(amount).dp(STELLAR_DECIMAL, BigNumber.ROUND_DOWN).toString(),
+        buyAmount: new BigNumber(amount)
+          .dp(STELLAR_DECIMAL, BigNumber.ROUND_DOWN)
+          .toString(),
         price: new BigNumber(price).dp(STELLAR_DECIMAL, BigNumber.ROUND_UP),
         offerId,
-      }),
+      })
     )
     .setTimeout(stellarTxTimeout)
     .build();
@@ -190,7 +205,7 @@ export const buildTxCreateSellOffer = async (
   targetAsset: Asset,
   sourceAccount: Account,
   offerId = '0',
-  exchangeFeeRate = '0',
+  exchangeFeeRate = '0'
 ): Promise<Transaction> => {
   const fee = (await server.fetchBaseFee()).toString();
 
@@ -210,14 +225,17 @@ export const buildTxCreateSellOffer = async (
             .toString(),
           price: new BigNumber(price).dp(STELLAR_DECIMAL, BigNumber.ROUND_DOWN),
           offerId,
-        }),
+        })
       )
       .addOperation(
         Operation.payment({
           destination: `${ENV.STELLAR_EXCHANGE_ACCOUNT}`,
           asset: baseAsset,
-          amount: new BigNumber(amount).times(exchangeFeeRate).dp(STELLAR_DECIMAL, BigNumber.ROUND_DOWN).toString(),
-        }),
+          amount: new BigNumber(amount)
+            .times(exchangeFeeRate)
+            .dp(STELLAR_DECIMAL, BigNumber.ROUND_DOWN)
+            .toString(),
+        })
       )
       .setTimeout(stellarTxTimeout)
       .build();
@@ -232,10 +250,12 @@ export const buildTxCreateSellOffer = async (
       Operation.manageSellOffer({
         selling: baseAsset,
         buying: targetAsset,
-        amount: new BigNumber(amount).dp(STELLAR_DECIMAL, BigNumber.ROUND_DOWN).toString(),
+        amount: new BigNumber(amount)
+          .dp(STELLAR_DECIMAL, BigNumber.ROUND_DOWN)
+          .toString(),
         price: new BigNumber(price).dp(STELLAR_DECIMAL, BigNumber.ROUND_DOWN),
         offerId,
-      }),
+      })
     )
     .setTimeout(stellarTxTimeout)
     .build();
@@ -247,20 +267,24 @@ const buyOffer = async (
   baseAsset: Asset,
   targetAsset: Asset,
   keyPair: Keypair,
-  exchangeFeeRate = '0',
+  exchangeFeeRate = '0'
 ) => {
   // TODO: catch exception when account is not active
   const account = await server.loadAccount(keyPair.publicKey());
-  const sourceAccount = new Account(account.accountId(), account.sequenceNumber());
-  let transaction: Transaction | FeeBumpTransaction = await buildTxCreateBuyOffer(
-    amount,
-    price,
-    baseAsset,
-    targetAsset,
-    sourceAccount,
-    offerIdForNewOffer,
-    exchangeFeeRate,
+  const sourceAccount = new Account(
+    account.accountId(),
+    account.sequenceNumber()
   );
+  let transaction: Transaction | FeeBumpTransaction =
+    await buildTxCreateBuyOffer(
+      amount,
+      price,
+      baseAsset,
+      targetAsset,
+      sourceAccount,
+      offerIdForNewOffer,
+      exchangeFeeRate
+    );
 
   // sign
   transaction.sign(keyPair);
@@ -269,7 +293,10 @@ const buyOffer = async (
   try {
     return await server.submitTransaction(transaction);
   } catch (e) {
-    throw e.response.data.extras.result_codes.operations || e.response.data.extras.result_codes.transaction;
+    throw (
+      e.response.data.extras.result_codes.operations ||
+      e.response.data.extras.result_codes.transaction
+    );
     // return JSON.stringify(e.response, null, 2);
   }
 };
@@ -280,20 +307,24 @@ const sellOffer = async (
   baseAsset: Asset,
   targetAsset: Asset,
   keyPair: Keypair,
-  exchangeFeeRate = '0',
+  exchangeFeeRate = '0'
 ) => {
   // TODO: catch exception when account is not active
   const account = await server.loadAccount(keyPair.publicKey());
-  const sourceAccount = new Account(account.accountId(), account.sequenceNumber());
-  let transaction: Transaction | FeeBumpTransaction = await buildTxCreateSellOffer(
-    amount,
-    price,
-    baseAsset,
-    targetAsset,
-    sourceAccount,
-    offerIdForNewOffer,
-    exchangeFeeRate,
+  const sourceAccount = new Account(
+    account.accountId(),
+    account.sequenceNumber()
   );
+  let transaction: Transaction | FeeBumpTransaction =
+    await buildTxCreateSellOffer(
+      amount,
+      price,
+      baseAsset,
+      targetAsset,
+      sourceAccount,
+      offerIdForNewOffer,
+      exchangeFeeRate
+    );
 
   // sign
   transaction.sign(keyPair);
@@ -302,7 +333,10 @@ const sellOffer = async (
   try {
     return await server.submitTransaction(transaction);
   } catch (e) {
-    throw e.response.data.extras.result_codes.operations || e.response.data.extras.result_codes.transaction;
+    throw (
+      e.response.data.extras.result_codes.operations ||
+      e.response.data.extras.result_codes.transaction
+    );
     // return JSON.stringify(e.response, null, 2);
   }
 };
@@ -312,25 +346,33 @@ export const sendStellarOffer = async (
   amount: number | string | BigNumber,
   price: number | string | BigNumber,
   selectedPair: {
-    base_symbol: string,
-    base_stellar_issuer: string,
-    base_type: STELLAR_ASSET_TYPE,
-    quote_symbol: string,
-    quote_stellar_issuer: string,
-    quote_type: STELLAR_ASSET_TYPE
+    base_symbol: string;
+    base_stellar_issuer: string;
+    base_type: STELLAR_ASSET_TYPE;
+    quote_symbol: string;
+    quote_stellar_issuer: string;
+    quote_type: STELLAR_ASSET_TYPE;
   },
   privateKey: string,
   exchangeFeeRate = '0',
-  total = '0',
+  total = '0'
 ): Promise<any> => {
-  const keyPair = Keypair.fromSecret(privateKey)
+  const keyPair = Keypair.fromSecret(privateKey);
 
   if (!keyPair) return;
 
   const tradeByTotal = new BigNumber(total).gt(0);
 
-  const baseAsset = getAsset(selectedPair.base_symbol, selectedPair.base_stellar_issuer, selectedPair.base_type);
-  const targetAsset = getAsset(selectedPair.quote_symbol, selectedPair.quote_stellar_issuer, selectedPair.quote_type);
+  const baseAsset = getAsset(
+    selectedPair.base_symbol,
+    selectedPair.base_stellar_issuer,
+    selectedPair.base_type
+  );
+  const targetAsset = getAsset(
+    selectedPair.quote_symbol,
+    selectedPair.quote_stellar_issuer,
+    selectedPair.quote_type
+  );
 
   if (orderSide === OrderSide.Buy) {
     if (tradeByTotal) {
@@ -341,7 +383,7 @@ export const sendStellarOffer = async (
         targetAsset,
         baseAsset,
         keyPair,
-        exchangeFeeRate,
+        exchangeFeeRate
       );
     } else {
       return await buyOffer(
@@ -350,7 +392,7 @@ export const sendStellarOffer = async (
         baseAsset,
         targetAsset,
         keyPair,
-        exchangeFeeRate,
+        exchangeFeeRate
       );
     }
   } else if (orderSide === OrderSide.Sell) {
@@ -362,7 +404,7 @@ export const sendStellarOffer = async (
         targetAsset,
         baseAsset,
         keyPair,
-        exchangeFeeRate,
+        exchangeFeeRate
       );
     } else {
       return await sellOffer(
@@ -371,7 +413,7 @@ export const sendStellarOffer = async (
         baseAsset,
         targetAsset,
         keyPair,
-        exchangeFeeRate,
+        exchangeFeeRate
       );
     }
   }
@@ -397,12 +439,12 @@ const createStellarOfferType2 = (
   t: string | BigNumber,
   orderSide: OrderSide,
   selectedPair: {
-    base_symbol: string,
-    base_stellar_issuer: string,
-    base_type: STELLAR_ASSET_TYPE,
-    quote_symbol: string,
-    quote_stellar_issuer: string,
-    quote_type: STELLAR_ASSET_TYPE
+    base_symbol: string;
+    base_stellar_issuer: string;
+    base_type: STELLAR_ASSET_TYPE;
+    quote_symbol: string;
+    quote_stellar_issuer: string;
+    quote_type: STELLAR_ASSET_TYPE;
   },
   pairId: number,
   method: OrderMethod,
@@ -410,7 +452,7 @@ const createStellarOfferType2 = (
   stellarTradingFee: string,
   orderHash: string,
   maker: string,
-  stellarOfferId?: string,
+  stellarOfferId?: string
 ): StellarOrderType2 => {
   let feeAmount: BigNumber;
   const isUsingTotal = new BigNumber(t || '0').gt('0');
@@ -432,7 +474,9 @@ const createStellarOfferType2 = (
     amount: isUsingTotal ? undefined : a.toString(),
     total: isUsingTotal ? t.toString() : undefined,
     // we use this field to save fee of both buy and sell order
-    taker_token_fee_amounts: feeAmount.dp(STELLAR_DECIMAL, BigNumber.ROUND_DOWN).toString(),
+    taker_token_fee_amounts: feeAmount
+      .dp(STELLAR_DECIMAL, BigNumber.ROUND_DOWN)
+      .toString(),
     type: type,
     pair_id: pairId,
     side: orderSide,
@@ -453,7 +497,7 @@ const selectedPair = {
   base_type: STELLAR_ASSET_TYPE.CREDIT_ALPHANUM4,
   quote_symbol: 'JPYV',
   quote_stellar_issuer: issuer,
-  quote_type: STELLAR_ASSET_TYPE.CREDIT_ALPHANUM4
+  quote_type: STELLAR_ASSET_TYPE.CREDIT_ALPHANUM4,
 };
 const pairId = OrderNameOfPairId.USDV_JPYV;
 
@@ -465,9 +509,9 @@ const createStellarOrder = async (): Promise<any> => {
       priceOrder,
       selectedPair,
       ENV.PrivateKey,
-      fees.limitOrderStellar,
+      fees.limitOrderStellar
     );
-    console.log(responseData)
+    console.log(responseData);
 
     const method = OrderMethod.STELLAR;
     const stellarOfferId = await getStellarOfferId(responseData);
@@ -484,7 +528,7 @@ const createStellarOrder = async (): Promise<any> => {
       fees.limitOrderStellar,
       responseData.hash,
       responseData.source_account,
-      stellarOfferId,
+      stellarOfferId
     );
     console.log(order);
 
@@ -492,19 +536,21 @@ const createStellarOrder = async (): Promise<any> => {
       .post(ENV.FcxCreateOrderApi, order, authHeaders)
       .then((res: any) => {
         if (res.data.data) {
-          console.log(`Create Order Id: ${res.data.data.id} Success To Backend`);
+          console.log(
+            `Create Order Id: ${res.data.data.id} Success To Backend`
+          );
         }
       })
       .catch((error: any) => {
         console.log(error.response.data, 'Error');
       });
   } catch (e) {
-    console.log(e)
+    console.log(e);
   }
-}
+};
 
 const start = () => {
   createStellarOrder();
-}
+};
 
 start();

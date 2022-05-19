@@ -1,9 +1,9 @@
 /* eslint-disable prefer-const */
 /* eslint-disable camelcase */
-import {BigNumber, hexUtils} from '@0x/utils';
-import {LimitOrder, Signature} from '@0x/protocol-utils';
-import {zeroExABI} from './zeroExABI';
-import {Contract, providers, Wallet} from 'ethers';
+import { BigNumber, hexUtils } from '@0x/utils';
+import { LimitOrder, Signature } from '@0x/protocol-utils';
+import { zeroExABI } from './zeroExABI';
+import { Contract, providers, Wallet } from 'ethers';
 
 const axios = require('axios').default;
 
@@ -79,21 +79,25 @@ const getAmountByOrderSide = (side: OrderSide) => {
     return {
       makerAmount: new BigNumber(amountOrder)
         .times(ratio)
-        .times(new BigNumber(10).pow(18)).dp(0, BigNumber.ROUND_FLOOR),
+        .times(new BigNumber(10).pow(18))
+        .dp(0, BigNumber.ROUND_FLOOR),
       takerAmount: new BigNumber(amountOrder)
         .times(ratio)
         .times(priceOrder)
-        .times(new BigNumber(10).pow(18)).dp(0, BigNumber.ROUND_FLOOR),
+        .times(new BigNumber(10).pow(18))
+        .dp(0, BigNumber.ROUND_FLOOR),
     };
   }
   return {
     makerAmount: new BigNumber(amountOrder)
       .times(ratio)
       .times(priceOrder)
-      .times(new BigNumber(10).pow(18)).dp(0, BigNumber.ROUND_FLOOR),
+      .times(new BigNumber(10).pow(18))
+      .dp(0, BigNumber.ROUND_FLOOR),
     takerAmount: new BigNumber(amountOrder)
       .times(ratio)
-      .times(new BigNumber(10).pow(18)).dp(0, BigNumber.ROUND_FLOOR),
+      .times(new BigNumber(10).pow(18))
+      .dp(0, BigNumber.ROUND_FLOOR),
   };
 };
 
@@ -107,11 +111,13 @@ const buildBscOrder = (): LimitOrder => {
     taker: '0x0000000000000000000000000000000000000000',
     sender: matcherAddress,
     // @ts-ignore
-    takerTokenFeeAmount: new BigNumber(orderSideCreated === OrderSide.Sell ? amountOrder : new BigNumber(amountOrder).times(priceOrder))
+    takerTokenFeeAmount: new BigNumber(
+      OrderSide.Sell
+        ? amountOrder
+        : new BigNumber(amountOrder).times(priceOrder)
+    )
       .times(fees.limitOrderBsc)
-      .times(
-        new BigNumber(10).pow(18).dp(0, BigNumber.ROUND_FLOOR)
-      ),
+      .times(new BigNumber(10).pow(18).dp(0, BigNumber.ROUND_FLOOR)),
     feeRecipient: feeRecipientAddress,
     // fake
     pool: '0x0000000000000000000000000000000000000000000000000000000000000000',
@@ -188,7 +194,7 @@ export const createBscOrderType2 = (
 
 const createBscOrder = async (): Promise<void> => {
   const bscOrder = buildBscOrder();
-  console.log(bscOrder)
+  console.log(bscOrder);
   const signature: Signature = await signOrder(bscOrder);
   const provider = new providers.JsonRpcProvider(ENV.JsonRpcProvider);
 

@@ -6,6 +6,9 @@
   "author": "dooboolab",
   "license": "MIT",
   "private": true,
+  "engine": {
+    "node": ">=16 <17"
+  },
   "scripts": {
     "start": "node node_modules/ts-node/dist/bin.js ./src/index.ts",
     "watch": "nodemon --watch 'src/**/*.ts' --ignore 'src/**/*.spec.ts' --exec 'ts-node' src/index.ts",
